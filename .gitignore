@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+SOURCES.txt
+
+# Virtual environments
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# ML/Artifacts
+mlruns/
+artifacts/
+*.joblib
+*.keras
+*.h5
+*.pkl
+
+# Logs
+*.log
+
+# Data (keep machine_data.csv but ignore generated)
+predictions.csv
+
+tests/

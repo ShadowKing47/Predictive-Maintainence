@@ -96,14 +96,36 @@ pytest tests/test_models.py -v
 pytest -v
 ```
 
+## Phase 1 — Engineering Hygiene (Complete)
+
+| Item | Implementation |
+|------|----------------|
+| **Exact package versions** | All deps pinned in `pyproject.toml` (e.g., `pandas==2.3.3`, `numpy==2.3.5`, `tensorflow==2.21.0`, `pandera==0.33.0`, `pydantic==2.12.2`, `structlog==26.1.0`, `mlflow==3.15.2`, `dvc==3.67.1`, `optuna==4.9.0`, `shap==0.52.0`, `pytest==8.4.2`, `ruff==0.11.10`, `black==26.3.1`, `mypy==1.16.1`, `pre-commit==4.2.0`) |
+| **Pre-commit hooks** | `.pre-commit-config.yaml`: ruff (lint+format), black, mypy, isort, trailing-whitespace, end-of-file-fixer, check-yaml/toml, check-merge-conflict, detect-private-key, debug-logger |
+| **CI Pipeline** | `.github/workflows/ci.yml`: lint → test → model-tests → build → docker → security (trivy) |
+| **Pydantic Settings** | `src/mfp/core/config.py`: structured config with env prefixes (`MFP_DATA_`, `MFP_SPLIT_`, `MFP_FORECASTER_`, `MFP_CLASSIFIER_`) |
+| **Structured Logging** | `src/mfp/core/logging.py`: structlog JSON output with request_id, model_version context |
+| **Deterministic Seeds** | `src/mfp/core/seeds.py`: `TF_DETERMINISTIC_OPS=1`, `TF_CUDNN_DETERMINISTIC=1`, global seed for random/numpy/TF |
+| **Typer CLI** | `src/mfp/cli.py`: `mfp train`, `mfp evaluate`, `mfp backfill` commands |
+| **Unit Tests** | `tests/test_correctness.py`: labeler (horizon logic, sanity report), sequences (shape, values), temporal splits (ratios, purge gap, leakage detection), scaler (train-only fit, persistence) |
+
 ## CI/CD Pipeline
 
 `.github/workflows/ci.yml`:
-1. Lint (ruff, black, mypy)
-2. Unit + integration tests
-3. Build Docker images
-4. Security scan (trivy)
-5. Model tests (directional, invariance, baseline gates, XAI sanity)
+1. **Lint**: ruff, black, mypy (strict), pre-commit hooks
+2. **Unit & Integration Tests**: pytest with coverage
+3. **Model Correctness Tests**: Baseline gate (LSTM MSE < Persistence MSE), XAI sanity (Phase 3)
+4. **Build Package**: `python -m build` → wheel/sdist artifacts
+5. **Docker Build**: API + Train images (continue-on-error for missing Dockerfiles)
+6. **Security Scan**: Trivy filesystem scan → SARIF upload to GitHub Security
+
+## Pre-commit Setup
+
+```bash
+pip install pre-commit==4.2.0
+pre-commit install
+pre-commit run --all-files
+```
 
 ## Monitoring (Phase 6)
 

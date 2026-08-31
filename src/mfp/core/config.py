@@ -1,7 +1,5 @@
 from pathlib import Path
-from typing import Literal
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -62,6 +60,20 @@ class ClassifierConfig(BaseSettings):
     class_weight: dict[int, float] | None = None
 
 
+class OptunaConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="MFP_OPTUNA_")
+
+    enabled: bool = False
+    n_trials: int = 50
+    timeout: int | None = None
+    study_name: str = "mfp_tuning"
+    storage: str | None = None
+    sampler: str = "tpe"
+    pruner: str = "median"
+    direction: str = "minimize"
+    metric: str = "val_loss"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
@@ -71,6 +83,7 @@ class Settings(BaseSettings):
     split: SplitConfig = SplitConfig()
     forecaster: ForecasterConfig = ForecasterConfig()
     classifier: ClassifierConfig = ClassifierConfig()
+    optuna: OptunaConfig = OptunaConfig()
     random_seed: int = 42
     mlflow_tracking_uri: str = "file:./mlruns"
     artifact_dir: Path = Path("./artifacts")

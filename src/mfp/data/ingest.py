@@ -1,15 +1,14 @@
 import pandas as pd
 
 from mfp.core.config import settings
-from mfp.core.exceptions import DataValidationError
 from mfp.core.logging import get_logger
+from mfp.data.label import add_risk_labels, label_sanity_report
 from mfp.data.validate import (
-    validate_sensor_data,
-    check_temporal_order,
     check_missing_values,
     check_sensor_stuck,
+    check_temporal_order,
+    validate_sensor_data,
 )
-from mfp.data.label import add_risk_labels, label_sanity_report
 
 logger = get_logger(__name__)
 

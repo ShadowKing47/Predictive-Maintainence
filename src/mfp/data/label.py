@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from mfp.core.config import settings
 from mfp.core.logging import get_logger
@@ -15,9 +15,9 @@ def add_risk_labels(
 ) -> pd.DataFrame:
     """
     Add horizon-based risk labels.
-    
+
     risk[t] = 1 if a threshold breach (failure) occurs in (t, t+horizon].
-    
+
     This is the standard predictive maintenance framing from §2.3.
     """
     temp_thresh = temp_threshold or settings.data.temp_threshold

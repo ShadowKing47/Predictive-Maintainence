@@ -38,3 +38,4 @@ artifacts/
 predictions.csv
 
 tests/
+trash/

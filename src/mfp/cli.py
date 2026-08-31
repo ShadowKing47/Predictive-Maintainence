@@ -1,5 +1,5 @@
+
 import typer
-from pathlib import Path
 
 from mfp.core.config import settings
 from mfp.core.logging import configure_logging, get_logger
@@ -15,13 +15,17 @@ def train(
     artifact_dir: str = typer.Option(None, "--artifacts", "-a", help="Artifact output directory"),
     seed: int = typer.Option(settings.random_seed, "--seed", help="Random seed"),
     log_level: str = typer.Option("INFO", "--log-level", help="Log level"),
+    walk_forward: bool = typer.Option(False, "--walk-forward", help="Enable walk-forward CV"),
+    n_splits: int = typer.Option(5, "--n-splits", help="Number of CV folds"),
+    optuna: bool = typer.Option(False, "--optuna", help="Enable Optuna hyperparameter tuning"),
 ) -> None:
     """Train forecaster and risk classifier."""
     configure_logging(log_level)
     settings.random_seed = seed
+    settings.optuna.enabled = optuna
 
-    logger.info("cli_train_start", data_path=data_path, artifact_dir=artifact_dir)
-    results = run_full_training_pipeline(data_path, artifact_dir)
+    logger.info("cli_train_start", data_path=data_path, artifact_dir=artifact_dir, walk_forward=walk_forward, optuna=optuna)
+    results = run_full_training_pipeline(data_path, artifact_dir, walk_forward=walk_forward, n_splits=n_splits)
     logger.info("cli_train_complete", results=results)
 
 

@@ -1,10 +1,9 @@
 import json
-import os
+from pathlib import Path
+
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-from tensorflow.keras import layers, models, callbacks, optimizers
-import joblib
+from tensorflow.keras import callbacks, layers, models, optimizers
 
 from mfp.core.config import settings
 from mfp.core.exceptions import ModelError
@@ -145,20 +144,22 @@ class RiskClassifier:
 
     def save(self, path: str) -> None:
         """Save model, scaler, and threshold."""
-        os.makedirs(path, exist_ok=True)
-        self.model.save(os.path.join(path, "classifier.keras"))
-        self.scaler.save(os.path.join(path, "scaler.joblib"))
-        with open(os.path.join(path, "config.json"), "w") as f:
+        path_obj = Path(path)
+        path_obj.mkdir(parents=True, exist_ok=True)
+        self.model.save(path_obj / "classifier.keras")
+        self.scaler.save(path_obj / "scaler.joblib")
+        with (path_obj / "config.json").open("w") as f:
             json.dump({**self.config, "decision_threshold": self.decision_threshold}, f)
         logger.info("classifier_saved", path=path)
 
     @classmethod
     def load(cls, path: str) -> "RiskClassifier":
         """Load model, scaler, and threshold."""
+        path_obj = Path(path)
         obj = cls()
-        obj.model = models.load_model(os.path.join(path, "classifier.keras"))
-        obj.scaler = FeatureScaler.load(os.path.join(path, "scaler.joblib"))
-        with open(os.path.join(path, "config.json")) as f:
+        obj.model = models.load_model(path_obj / "classifier.keras")
+        obj.scaler = FeatureScaler.load(path_obj / "scaler.joblib")
+        with (path_obj / "config.json").open() as f:
             config = json.load(f)
             obj.config = {k: v for k, v in config.items() if k != "decision_threshold"}
             obj.decision_threshold = config.get("decision_threshold", 0.5)

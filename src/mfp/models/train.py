@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import numpy as np
@@ -10,13 +9,21 @@ from mfp.core.seeds import set_global_seeds
 from mfp.data.ingest import preprocess_pipeline
 from mfp.features.scaling import FeatureScaler
 from mfp.features.sequences import (
+    check_split_leakage,
     create_sequences,
     temporal_split_with_purge,
-    check_split_leakage,
 )
+from mfp.models.baselines import compare_with_baselines
 from mfp.models.forecast import SensorForecaster
 from mfp.models.risk import RiskClassifier
-from mfp.models.baselines import compare_with_baselines
+from mfp.models.tuning import (
+    log_classifier_mlflow,
+    log_forecaster_mlflow,
+    run_classifier_tuning,
+    run_forecaster_tuning,
+    run_walk_forward_training,
+    setup_mlflow,
+)
 
 logger = get_logger(__name__)
 
@@ -97,7 +104,12 @@ def train_forecaster(
     y_val: np.ndarray,
 ) -> SensorForecaster:
     """Train the sensor forecaster."""
-    forecaster = SensorForecaster()
+    if settings.optuna.enabled:
+        best_params = run_forecaster_tuning(X_train, y_train, X_val, y_val)
+        forecaster = SensorForecaster(config=best_params)
+    else:
+        forecaster = SensorForecaster()
+
     forecaster.build_model()
     forecaster.train(X_train, y_train, X_val, y_val)
     return forecaster
@@ -110,7 +122,12 @@ def train_classifier(
     y_val: np.ndarray,
 ) -> RiskClassifier:
     """Train the risk classifier."""
-    classifier = RiskClassifier()
+    if settings.optuna.enabled:
+        best_params = run_classifier_tuning(X_train, y_train, X_val, y_val)
+        classifier = RiskClassifier(config=best_params)
+    else:
+        classifier = RiskClassifier()
+
     classifier.build_model()
     classifier.train(X_train, y_train, X_val, y_val)
     # Tune threshold on validation
@@ -121,6 +138,8 @@ def train_classifier(
 def run_full_training_pipeline(
     data_path: str | None = None,
     artifact_dir: str | None = None,
+    walk_forward: bool = False,
+    n_splits: int = 5,
 ) -> dict:
     """Run the complete training pipeline: forecaster -> classifier -> baselines."""
     set_global_seeds(settings.random_seed)
@@ -128,9 +147,16 @@ def run_full_training_pipeline(
     artifact_path = Path(artifact_dir or settings.artifact_dir)
     artifact_path.mkdir(parents=True, exist_ok=True)
 
+    # Setup MLflow
+    if settings.mlflow_tracking_uri:
+        setup_mlflow()
+
     # 1. Load and preprocess data
     logger.info("starting_training_pipeline")
     df = preprocess_pipeline(data_path)
+
+    if walk_forward:
+        return run_walk_forward_training(df, n_splits=n_splits, artifact_dir=artifact_dir)
 
     # 2. Prepare forecaster data
     (Xf_train, yf_train), (Xf_val, yf_val), (Xf_test, yf_test), scaler = prepare_forecaster_data(df)
@@ -165,6 +191,17 @@ def run_full_training_pipeline(
     classifier.save(str(artifact_path / "classifier"))
     scaler.save(str(artifact_path / "scaler.joblib"))
 
+    # 10. Log to MLflow
+    if settings.mlflow_tracking_uri:
+        log_forecaster_mlflow(
+            forecaster, forecaster_metrics,
+            forecaster.config, str(artifact_path / "forecaster")
+        )
+        log_classifier_mlflow(
+            classifier, classifier_metrics,
+            classifier.config, str(artifact_path / "classifier")
+        )
+
     results = {
         "forecaster_test": forecaster_metrics,
         "forecaster_persistence": persist_metrics,
@@ -181,3 +218,4 @@ if __name__ == "__main__":
     import sys
     path = sys.argv[1] if len(sys.argv) > 1 else None
     run_full_training_pipeline(path)
+

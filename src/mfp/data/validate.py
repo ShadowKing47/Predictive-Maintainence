@@ -1,6 +1,6 @@
-import pandera as pa
-from pandera import Column, DataFrameSchema, Check
 import pandas as pd
+import pandera as pa
+from pandera import Check, Column, DataFrameSchema
 
 from mfp.core.config import settings
 from mfp.core.exceptions import DataValidationError

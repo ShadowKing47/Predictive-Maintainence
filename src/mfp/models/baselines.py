@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.linear_model import RidgeClassifier
-from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 from mfp.core.logging import get_logger
 
@@ -89,11 +89,11 @@ class RiskPersistenceBaseline:
         """Compute classification metrics."""
         from sklearn.metrics import (
             accuracy_score,
+            average_precision_score,
+            f1_score,
             precision_score,
             recall_score,
-            f1_score,
             roc_auc_score,
-            average_precision_score,
         )
 
         y_pred = self.predict(X)

@@ -1,8 +1,8 @@
 import json
+from pathlib import Path
+
 import numpy as np
-import pandas as pd
-import tensorflow as tf
-from tensorflow.keras import layers, models, callbacks, optimizers
+from tensorflow.keras import callbacks, layers, models, optimizers
 
 from mfp.core.config import settings
 from mfp.core.exceptions import ModelError
@@ -125,21 +125,22 @@ class SensorForecaster:
 
     def save(self, path: str) -> None:
         """Save model and scaler."""
-        import os
-        os.makedirs(path, exist_ok=True)
-        self.model.save(os.path.join(path, "forecaster.keras"))
-        self.scaler.save(os.path.join(path, "scaler.joblib"))
-        with open(os.path.join(path, "config.json"), "w") as f:
+        path_obj = Path(path)
+        path_obj.mkdir(parents=True, exist_ok=True)
+        self.model.save(path_obj / "forecaster.keras")
+        self.scaler.save(path_obj / "scaler.joblib")
+        with (path_obj / "config.json").open("w") as f:
             json.dump(self.config, f)
         logger.info("forecaster_saved", path=path)
 
     @classmethod
     def load(cls, path: str) -> "SensorForecaster":
         """Load model and scaler."""
+        path_obj = Path(path)
         obj = cls()
-        obj.model = models.load_model(os.path.join(path, "forecaster.keras"))
-        obj.scaler = FeatureScaler.load(os.path.join(path, "scaler.joblib"))
-        with open(os.path.join(path, "config.json")) as f:
+        obj.model = models.load_model(path_obj / "forecaster.keras")
+        obj.scaler = FeatureScaler.load(path_obj / "scaler.joblib")
+        with (path_obj / "config.json").open() as f:
             obj.config = json.load(f)
         logger.info("forecaster_loaded", path=path)
         return obj

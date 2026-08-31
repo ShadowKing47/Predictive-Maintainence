@@ -1,7 +1,5 @@
 import numpy as np
-import pandas as pd
 
-from mfp.core.config import settings
 from mfp.core.exceptions import SplitError
 from mfp.core.logging import get_logger
 
@@ -15,7 +13,7 @@ def create_sequences(
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Create sequences for time series forecasting.
-    
+
     X[i] = data[i : i + seq_len]
     y[i] = data[i + seq_len + horizon - 1]  # forecast horizon steps ahead
     """
@@ -45,10 +43,10 @@ def temporal_split_with_purge(
 ]:
     """
     Split sequences temporally with purge gap between splits.
-    
+
     This prevents leakage by ensuring train/val/test sequences don't
     share timestamps within the purge gap (seq_len + horizon).
-    
+
     Returns: (X_train, y_train), (X_val, y_val), (X_test, y_test)
     """
     total = len(X)
@@ -93,7 +91,7 @@ def check_split_leakage(
 ) -> bool:
     """
     Verify no temporal leakage between splits.
-    
+
     Checks that the last timestamp in train + purge_gap <= first timestamp in val,
     and similarly for val -> test.
     """
